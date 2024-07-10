@@ -16,7 +16,7 @@ For press and other inquiries, please contact Hector Marinez at hmarinez@nvidia.
 
 ## Supported TensorRT Versions
 
-Development on the `main` branch is for the latest version of [TensorRT 10.0](https://developer.nvidia.com/nvidia-tensorrt-download) with full-dimensions and dynamic shape support.
+Development on the this branch is for the latest version of [TensorRT 10.2](https://developer.nvidia.com/nvidia-tensorrt-download) with full-dimensions and dynamic shape support.
 
 For previous versions of TensorRT, refer to their respective branches.
 
@@ -29,8 +29,8 @@ Current supported ONNX operators are found in the [operator support matrix](docs
 ### Dependencies
 
  - [Protobuf >= 3.0.x](https://github.com/google/protobuf/releases)
- - [TensorRT 10.1](https://developer.nvidia.com/tensorrt)
- - [TensorRT 10.1 open source libaries] (https://github.com/NVIDIA/TensorRT/)
+ - [TensorRT 10.2](https://developer.nvidia.com/tensorrt)
+ - [TensorRT 10.2 open source libaries] (https://github.com/NVIDIA/TensorRT/)
 
 ### Building
 

@@ -443,6 +443,21 @@ ShapeTensor convertTo1D(ImporterContext* ctx, const ShapeTensor& tensor)
     return ShapeTensor(*N_CHECK(addShuffle(ctx, tensor.tensor(ctx), shapeVector(1))->getOutput(0)));
 }
 
+ShapeTensor convertTo0D(ImporterContext* ctx, const ShapeTensor& tensor)
+{
+    if (tensor.size() != 1)
+    {
+        throw std::runtime_error("Cannot convert a tensor with size > 1 to a scalar!");
+    }
+    if (tensor.valueKnown(0))
+    {
+        return shapeScalar(tensor[0]);
+    }
+    auto* layer = N_CHECK(ctx->network()->addShuffle(tensor.tensor(ctx)));
+    layer->setReshapeDimensions(nvinfer1::Dims{0});
+    return ShapeTensor(*N_CHECK(layer->getOutput(0)));
+}
+
 //! If all values of x are known, return Dims with those values,
 //! but throw exception if any value is outside specified bounds.
 //! Otherwise return Dims with zeros.

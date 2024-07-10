@@ -133,10 +133,10 @@ NodeImportResult argMinMaxHelper(ImporterContext* ctx, const ::ONNX_NAMESPACE::N
         auto const dimOnAxis = gather(ctx, dims, axisTensor);
 
         // Create constant of shape indicesDims with values tensor.shape[axis]
-        auto const tensorDimOnAxis = constantOfShape(ctx, node, &dimOnAxis.tensor(ctx), &indicesDims.tensor(ctx));
+        auto const tensorDimOnAxis = constantOfShape(ctx, &dimOnAxis.tensor(ctx), &indicesDims.tensor(ctx));
 
         // Create constant of shape indicesDims with values of 1
-        auto const ones = constantOfShape(ctx, node, &shapeVector(1).tensor(ctx), &indicesDims.tensor(ctx));
+        auto const ones = constantOfShape(ctx, &shapeVector(1).tensor(ctx), &indicesDims.tensor(ctx));
 
         std::vector<TensorOrWeights> newInputs{tensorDimOnAxis, indices, ones};
         std::vector<TensorOrWeights> indicesUpdate;
@@ -285,8 +285,7 @@ nvinfer1::ITensor* castHelper(ImporterContext* ctx, nvinfer1::ITensor* input, nv
     return N_CHECK(cast->getOutput(0));
 }
 
-nvinfer1::ITensor* constantOfShape(ImporterContext* ctx, const ::ONNX_NAMESPACE::NodeProto& node,
-    nvinfer1::ITensor* constant, nvinfer1::ITensor* shape)
+nvinfer1::ITensor* constantOfShape(ImporterContext* ctx, nvinfer1::ITensor* constant, nvinfer1::ITensor* shape)
 {
     ShapeTensor shapeT{*shape};
     ShapeTensor zeros = similar(ctx, shapeT, 0);
@@ -398,17 +397,10 @@ onnx2trt::ShapedWeights createZeroShifts(onnx2trt::ShapedWeights const& shiftInt
 
 nvinfer1::ITensor* createZeroTensor(ImporterContext* ctx, nvinfer1::ITensor* data)
 {
-    auto* zeroLayer = N_CHECK(addConstant(ctx, std::vector<float>{0.f}, ::ONNX_NAMESPACE::TensorProto::FLOAT, {0, {1}}));
-    auto* zeroTensor = N_CHECK(zeroLayer->getOutput(0));
-    zeroTensor = castHelper(ctx, zeroTensor, data->getType());
-    auto result = broadcastTensors(ctx, zeroTensor, data);
-    if (result.is_error())
-    {
-        return nullptr;
-    }
-    auto* zeroBroadcastLayer = N_CHECK(ctx->network()->addElementWise(*data, *zeroTensor, nvinfer1::ElementWiseOperation::kPROD));
-    ctx->registerLayer(zeroBroadcastLayer, "ONNXTRT_createZeroTensor", nullptr);
-    return N_CHECK(zeroBroadcastLayer->getOutput(0));
+    auto shape = shapeOf(*data);
+    auto* zeros = N_CHECK(addConstantScalar(ctx, 0.0F, ::ONNX_NAMESPACE::TensorProto::FLOAT)->getOutput(0));
+    zeros = castHelper(ctx, zeros, data->getType());
+    return constantOfShape(ctx, zeros, &shape.tensor(ctx));
 }
 
 nvinfer1::ITensor* convertToScalar(ImporterContext* ctx, nvinfer1::ITensor* inpTensor)
@@ -1157,13 +1149,13 @@ NodeImportResult modulatedDeformableConvPluginHelper(ImporterContext* ctx, ::ONN
         {
             static_cast<half_float::half*>(defaultMaskWeights.values)[0] = 1.0;
             auto maskTensor = TensorOrWeights{defaultMaskWeights};
-            maskPtr = constantOfShape(ctx, node, &convertToTensor(maskTensor, ctx), &maskShape);
+            maskPtr = constantOfShape(ctx, &convertToTensor(maskTensor, ctx), &maskShape);
         }
         else
         {
             static_cast<float*>(defaultMaskWeights.values)[0] = 1.F;
             auto maskTensor = TensorOrWeights{defaultMaskWeights};
-            maskPtr = constantOfShape(ctx, node, &convertToTensor(maskTensor, ctx), &maskShape);
+            maskPtr = constantOfShape(ctx, &convertToTensor(maskTensor, ctx), &maskShape);
         }
     }
 
@@ -1224,7 +1216,7 @@ NodeImportResult instanceNormPluginHelper(ImporterContext* ctx, ::ONNX_NAMESPACE
 
     // Populate instanceNormalization plugin properties.
     std::string const pluginName = "InstanceNormalization_TRT";
-    std::string const pluginVersion = "1";
+    std::string const pluginVersion = "3";
     std::vector<nvinfer1::PluginField> f;
 
     // get the values of constant inputs and cast them to float32
@@ -1239,12 +1231,12 @@ NodeImportResult instanceNormPluginHelper(ImporterContext* ctx, ::ONNX_NAMESPACE
 
     // Create plugin from registry
     auto const plugin = createPlugin(getNodeName(node),
-        static_cast<nvinfer1::IPluginCreator*>(importPluginCreator(ctx, pluginName, pluginVersion)), f);
+        static_cast<nvinfer1::IPluginCreatorV3One*>(importPluginCreator(ctx, pluginName, pluginVersion)), f);
 
     ASSERT_NODE(plugin != nullptr, "InstanceNormalization plugin was not found in the plugin registry!", node, nodeIdx,
         ErrorCode::kUNSUPPORTED_NODE);
 
-    auto* layer = N_CHECK(ctx->network()->addPluginV2(&tensorPtr, 1, *plugin));
+    auto* layer = N_CHECK(ctx->network()->addPluginV3(&tensorPtr, 1, nullptr, 0, *plugin));
     ctx->registerLayer(layer, node);
     tensorPtr = N_CHECK(layer->getOutput(0));
 

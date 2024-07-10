@@ -231,6 +231,9 @@ ShapeTensor shapeOf(TensorOrWeights& t);
 //! Reshape 0D tensor to 1D tensor.
 ShapeTensor convertTo1D(ImporterContext* ctx, const ShapeTensor& tensor);
 
+//! Reshape single value 1D tensor to a 0D tensor.
+ShapeTensor convertTo0D(ImporterContext* ctx, const ShapeTensor& tensor);
+
 //! Add an ISliceLayer.
 nvinfer1::ISliceLayer* addSlice(ImporterContext* ctx, nvinfer1::ITensor& data, const ShapeTensor& starts,
     const ShapeTensor& sizes, const ShapeTensor& strides);

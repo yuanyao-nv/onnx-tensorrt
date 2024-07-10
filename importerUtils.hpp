@@ -127,8 +127,7 @@ std::vector<int32_t> calculatePitches(nvinfer1::Dims const& inputDims);
 nvinfer1::ITensor* castHelper(ImporterContext* ctx, nvinfer1::ITensor* input, nvinfer1::DataType dtype);
 
 // Helper function for constantOfShape operator. Input shape must be a shape tensor
-nvinfer1::ITensor* constantOfShape(ImporterContext* ctx, const ::ONNX_NAMESPACE::NodeProto& node,
-    nvinfer1::ITensor* constant, nvinfer1::ITensor* shape);
+nvinfer1::ITensor* constantOfShape(ImporterContext* ctx, nvinfer1::ITensor* constant, nvinfer1::ITensor* shape);
 
 // Helper function to convert an ONNX axis into a TRT axis
 Status convertAxis(int32_t& axis, int32_t const nbDims, ::ONNX_NAMESPACE::NodeProto const& node, size_t const nodeIdx);

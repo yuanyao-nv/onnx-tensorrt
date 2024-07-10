@@ -2,8 +2,14 @@
 
 # ONNX-TensorRT Changelog
 
+# TensorRT 10.2 GA Release - 2024-7-10
+For more details, see the 10.2 GA release notes.
+
+- Improved error handling with new macros and classes
+- Minor changes to op importers for `GRU` and `Squeeze`
+
 # TensorRT 10.1 GA Release - 2024-6-17
-For more details, see the 10.0 GA release notes.
+For more details, see the 10.1 GA release notes.
 
 - Added `supportsModelV2` API
 - Added support for `DeformConv` operation

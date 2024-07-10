@@ -175,6 +175,8 @@ protected:
 //!
 //! \brief an object for parsing ONNX models into a TensorRT network definition
 //!
+//! \warning Do not inherit from this class, as doing so will break forward-compatibility of the API and ABI.
+//!
 class IParser
 {
 public:
@@ -405,6 +407,8 @@ public:
 //! \class IParserRefitter
 //!
 //! \brief An interface designed to refit weights from an ONNX model.
+//!
+//! \warning Do not inherit from this class, as doing so will break forward-compatibility of the API and ABI.
 //!
 class IParserRefitter
 {

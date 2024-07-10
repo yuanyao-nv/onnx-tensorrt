@@ -731,7 +731,7 @@ DEFINE_BUILTIN_OP_IMPORTER(ConstantOfShape)
     static_cast<float*>(zeroWeights.values)[0] = 0.f;
     auto valueWeights = TensorOrWeights{attrs.get("value", zeroWeights)};
     nvinfer1::ITensor* value = &convertToTensor(valueWeights, ctx);
-    return {{constantOfShape(ctx, node, value, shape)}};
+    return {{constantOfShape(ctx, value, shape)}};
 }
 
 DEFINE_BUILTIN_OP_IMPORTER(Conv)
@@ -2374,7 +2374,7 @@ DEFINE_BUILTIN_OP_IMPORTER(GRU)
         {
             return &convertToTensor(inputs.at(inputIdx), ctx);
         }
-        return constantOfShape(ctx, node,
+        return constantOfShape(ctx,
             addConstantScalar(ctx, 0.f, ::ONNX_NAMESPACE::TensorProto_DataType_FLOAT, Dims{1, {1}})->getOutput(0),
             gateOutputShape);
     };
@@ -2491,12 +2491,12 @@ DEFINE_BUILTIN_OP_IMPORTER(GRU)
     LOG_VERBOSE("h(t) -> " << ht->getDimensions());
 
     // H(t) = (1 - z(t)) . h(t) + (z(t) . H(t-1))
+    // Constant `1` needs to be the same type as the inputs, either FP16 or FP32.
+    auto onnxType = zt->getType() == nvinfer1::DataType::kHALF ? ::ONNX_NAMESPACE::TensorProto::FLOAT16
+                                                               : ::ONNX_NAMESPACE::TensorProto::FLOAT;
+    auto* constOne = N_CHECK(addConstantScalar(ctx, 1.f, onnxType, Dims3{1, 1, 1})->getOutput(0));
     nvinfer1::ITensor* Ht = getElementWiseResult(ctx,
-        *getElementWiseResult(ctx,
-            *getElementWiseResult(ctx,
-                *addConstantScalar(ctx, 1.f, ::ONNX_NAMESPACE::TensorProto::FLOAT, Dims3{1, 1, 1})->getOutput(0), *zt,
-                eOp::kSUB),
-            *ht, eOp::kPROD),
+        *getElementWiseResult(ctx, *getElementWiseResult(ctx, *constOne, *zt, eOp::kSUB), *ht, eOp::kPROD),
         *getElementWiseResult(ctx, *zt, *Ht1Output, eOp::kPROD), eOp::kSUM);
 
     // singlePassShape = (1, batchSize, hiddenSize)
@@ -3051,7 +3051,7 @@ DEFINE_BUILTIN_OP_IMPORTER(LSTM)
         {
             return &convertToTensor(inputs.at(inputIdx), ctx);
         }
-        return constantOfShape(ctx, node,
+        return constantOfShape(ctx,
             addConstantScalar(ctx, 0.f, ::ONNX_NAMESPACE::TensorProto_DataType_FLOAT, nvinfer1::Dims{1, {1}})
                 ->getOutput(0),
             gateOutputShape);
@@ -4217,6 +4217,11 @@ DEFINE_BUILTIN_OP_IMPORTER(Range)
         delta = ShapeTensor{*input2};
     }
 
+    // In reality, although the ONNX spec requires scalars the inputs may be a vector of rank 1. Squeeze here if necessary.
+    start = start.rank() == 1 ? convertTo0D(ctx, start) : start;
+    limit = limit.rank() == 1 ? convertTo0D(ctx, limit) : limit;
+    delta = delta.rank() == 1 ? convertTo0D(ctx, delta) : delta;
+
     // "number_of_elements = max( ceil( (limit - start) / delta ) , 0 )"
     //
     // To implement this in TensorRT using only operations allowed on
@@ -4804,7 +4809,7 @@ DEFINE_BUILTIN_OP_IMPORTER(RNN)
         {
             return &convertToTensor(inputs.at(inputIdx), ctx);
         }
-        return constantOfShape(ctx, node,
+        return constantOfShape(ctx,
             N_CHECK(addConstantScalar(ctx, 0.f, ::ONNX_NAMESPACE::TensorProto_DataType_FLOAT, nvinfer1::Dims{1, {1}})
                 ->getOutput(0)),
             initialStateShape());

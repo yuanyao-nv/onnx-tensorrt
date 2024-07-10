@@ -28,7 +28,7 @@ add_definitions("-DSOURCE_LENGTH=${SOURCE_LENGTH}")
 # Version information
 #--------------------------------------------------
 set(ONNX2TRT_MAJOR 10)
-set(ONNX2TRT_MINOR 1)
+set(ONNX2TRT_MINOR 2)
 set(ONNX2TRT_PATCH 0)
 set(ONNX2TRT_VERSION "${ONNX2TRT_MAJOR}.${ONNX2TRT_MINOR}.${ONNX2TRT_PATCH}" CACHE STRING "ONNX2TRT version")
 
@@ -56,6 +56,7 @@ set(IMPORTER_SOURCES
   weightUtils.cpp
   WeightsContext.cpp
   TensorOrWeights.cpp
+  errorHelpers.cpp
 )
 
 if (BUILD_ONNXIFI)
